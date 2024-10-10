@@ -1,5 +1,5 @@
 resource "aws_vpc_ipv4_cidr_block_association" "secondary_cidr" {
-  vpc_id = var.vpc_id
+  vpc_id     = var.vpc_id
   cidr_block = var.secondary_cidr_block
 }
 
@@ -14,13 +14,13 @@ locals {
 resource "aws_subnet" "public" {
   count = local.create_public_subnets && (!var.one_nat_gateway_per_az || local.num_public_subnets >= length(local.azs)) ? local.num_public_subnets : 0
 
-  assign_ipv6_address_on_creation                = var.enable_ipv6 && var.public_subnet_ipv6_native ? true : var.public_subnet_assign_ipv6_address_on_creation
+  assign_ipv6_address_on_creation                = var.public_subnet_ipv6_native ? true : var.public_subnet_assign_ipv6_address_on_creation
   availability_zone                              = element(data.aws_availability_zones.available.names, count.index % length(data.aws_availability_zones.available.names))
   cidr_block                                     = var.public_subnet_ipv6_native ? null : element(concat(var.public_subnet_cidrs, [""]), count.index)
-  enable_dns64                                   = var.enable_ipv6 && var.public_subnet_enable_dns64
-  enable_resource_name_dns_aaaa_record_on_launch = var.enable_ipv6 && var.public_subnet_enable_resource_name_dns_aaaa_record_on_launch
+  enable_dns64                                   = var.public_subnet_enable_dns64
+  enable_resource_name_dns_aaaa_record_on_launch = var.public_subnet_enable_resource_name_dns_aaaa_record_on_launch
   enable_resource_name_dns_a_record_on_launch    = !var.public_subnet_ipv6_native && var.public_subnet_enable_resource_name_dns_a_record_on_launch
-  ipv6_native                                    = var.enable_ipv6 && var.public_subnet_ipv6_native
+  ipv6_native                                    = var.public_subnet_ipv6_native
   map_public_ip_on_launch                        = var.map_public_ip_on_launch
   private_dns_hostname_type_on_launch            = var.public_subnet_private_dns_hostname_type_on_launch
   vpc_id                                         = var.vpc_id
@@ -140,19 +140,19 @@ resource "aws_network_acl_rule" "public_outbound" {
 ################################################################################
 
 locals {
-  create_private_subnets =  local.num_private_subnets > 0
+  create_private_subnets = local.num_private_subnets > 0
 }
 
 resource "aws_subnet" "private" {
   count = local.create_private_subnets ? local.num_private_subnets : 0
 
-  assign_ipv6_address_on_creation                = var.enable_ipv6 && var.private_subnet_ipv6_native ? true : var.private_subnet_assign_ipv6_address_on_creation
+  assign_ipv6_address_on_creation                = var.private_subnet_ipv6_native ? true : var.private_subnet_assign_ipv6_address_on_creation
   availability_zone                              = element(data.aws_availability_zones.available.names, count.index % length(data.aws_availability_zones.available.names))
   cidr_block                                     = var.private_subnet_ipv6_native ? null : element(concat(var.private_subnet_cidrs, [""]), count.index)
-  enable_dns64                                   = var.enable_ipv6 && var.private_subnet_enable_dns64
-  enable_resource_name_dns_aaaa_record_on_launch = var.enable_ipv6 && var.private_subnet_enable_resource_name_dns_aaaa_record_on_launch
+  enable_dns64                                   = var.private_subnet_enable_dns64
+  enable_resource_name_dns_aaaa_record_on_launch = var.private_subnet_enable_resource_name_dns_aaaa_record_on_launch
   enable_resource_name_dns_a_record_on_launch    = !var.private_subnet_ipv6_native && var.private_subnet_enable_resource_name_dns_a_record_on_launch
-  ipv6_native                                    = var.enable_ipv6 && var.private_subnet_ipv6_native
+  ipv6_native                                    = var.private_subnet_ipv6_native
   private_dns_hostname_type_on_launch            = var.private_subnet_private_dns_hostname_type_on_launch
   vpc_id                                         = var.vpc_id
 
@@ -272,7 +272,7 @@ locals {
 }
 
 resource "aws_eip" "nat" {
-  count =  var.enable_nat_gateway && !var.reuse_nat_ips ? local.nat_gateway_count : 0
+  count = var.enable_nat_gateway && !var.reuse_nat_ips ? local.nat_gateway_count : 0
 
   domain = "vpc"
 
@@ -291,7 +291,7 @@ resource "aws_eip" "nat" {
 }
 
 resource "aws_nat_gateway" "this" {
-  count =  var.enable_nat_gateway ? local.nat_gateway_count : 0
+  count = var.enable_nat_gateway ? local.nat_gateway_count : 0
 
   allocation_id = element(
     local.nat_gateway_ips,
@@ -317,7 +317,7 @@ resource "aws_nat_gateway" "this" {
 }
 
 resource "aws_route" "private_nat_gateway" {
-  count =  var.enable_nat_gateway ? local.nat_gateway_count : 0
+  count = var.enable_nat_gateway ? local.nat_gateway_count : 0
 
   route_table_id         = element(aws_route_table.private[*].id, count.index)
   destination_cidr_block = var.nat_gateway_destination_cidr_block
@@ -329,7 +329,7 @@ resource "aws_route" "private_nat_gateway" {
 }
 
 resource "aws_route" "private_dns64_nat_gateway" {
-  count =  var.enable_nat_gateway && var.enable_ipv6 && var.private_subnet_enable_dns64 ? local.nat_gateway_count : 0
+  count = var.enable_nat_gateway && var.private_subnet_enable_dns64 ? local.nat_gateway_count : 0
 
   route_table_id              = element(aws_route_table.private[*].id, count.index)
   destination_ipv6_cidr_block = "64:ff9b::/96"
