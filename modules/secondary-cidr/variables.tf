@@ -10,6 +10,7 @@ variable "vpc_id" {
 variable "secondary_cidr_block" {
   description = "Secondary CIDR block to add to the VPC"
   type        = string
+  default     = null
 }
 
 variable "name" {
